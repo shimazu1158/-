@@ -1,0 +1,141 @@
+import streamlit as st
+import pandas as pd
+import os
+from datetime import datetime
+
+# 保存先のCSVファイル名
+DATA_PATH = "CRC-V_suihan_data.csv"
+
+# 項目名（列名）
+COLUMNS = [
+    "記録日時", "テストNo",
+    "シャッター_開時間（秒）", "シャッター_高さ（mm）", "シャッター_能力（kg/h）",
+    "コンベア_速度（秒", "事前洗米_ノズル番手", 
+    "事前洗米_ノズル数量", "事前洗米_ほぐし機1", "事前洗米_ほぐし機2", "事前洗米_洗米水圧力", "事前洗米_洗米水流量（L/min）",
+    "加水1_ノズル番手", "加水1_水圧（MPa）", "加水1_ノズル数量","加水1_ほぐし機",
+    "加水2_ノズル番手", "加水2_水圧（MPa）", "加水2_ノズル数量","加水2_ほぐし機",
+    "加水3_ノズル番手", "加水3_水圧（MPa）", "加水3_ノズル数量","加水3_ほぐし機",
+    "加水温度 (℃)","加水流量 (L/min)","加水P周波数 (Hz)",
+    "洗浄水P周波数（Hz）", "循環圧力（MPa）", "蒸気室温度（℃）", "過熱蒸気温度（℃）",
+    "出口ほぐし機", "ほぐし機回転（Hz）",
+    "ほぐし機1", "ほぐし機2", "ほぐし機（Hz）",
+    "周波数", "ストローク", "想定噴霧量", "ノズル番手", "ノズル数量",
+    "こめ品種", "生米処理量", "酢合わせ後重量",
+    "歩留まり", "生米水分率", "事前洗米後水分率", "炊きあがり水分率",
+    "蒸し機バーナー状態", "備考"
+]
+
+st.set_page_config(page_title="CRC-V炊飯データ登録", layout="wide")
+st.title("🍚 炊飯データ登録")
+
+# 入力フォーム
+col1, col2, col3, col4 = st.columns(4)
+
+with col1:
+    st.markdown("### 炊飯機")
+    test_no = st.text_input("テストNo")
+    shutter_duration = st.number_input("シャッター_開時間（秒）", value=0)
+    shutter_height = st.number_input("シャッター_高さ（mm）", value=0)
+    shutter_power = st.number_input("シャッター_能力（kg/h）", value=0.0, format="%.1f")
+    convey_speed = st.number_input("コンベア_速度（秒）", value=0)
+    add0_temp = st.text_input("事前洗米_ノズル番手")
+    add0_flow = st.text_input("事前洗米_ノズル数量")
+    add0_freq1 = st.text_input("事前洗米_ほぐし機1")
+    add0_freq2 = st.text_input("事前洗米_ほぐし機2")
+    add0_waterpressure = st.number_input("事前洗米_洗米水圧力", value=0.0, format="%.2f")
+    add0_waterflow = st.number_input("事前洗米_洗米水流量（L/min）", value=0.0, format="%.1f")
+    add1_temp = st.text_input("加水1_ノズル番手")
+    add1_flow = st.number_input("加水1_水圧（MPa）",value=0.0, format="%.2f")
+    add1_freq1 = st.text_input("加水1_ノズル数量")
+    add1_freq2 = st.text_input("加水1_ほぐし機")
+
+with col2:
+    st.markdown("### &nbsp;")
+    add2_temp = st.text_input("加水2_ノズル番手")
+    add2_flow = st.number_input("加水2_水圧（MPa）", value=0.0, format="%.2f")
+    add2_freq1 = st.text_input("加水2_ノズル数量")
+    add2_freq2 = st.text_input("加水2_ほぐし機")
+    add3_temp = st.text_input("加水3_ノズル番手")
+    add3_flow = st.number_input("加水3_水圧（MPa）", value=0.0, format="%.2f")
+    add3_freq1 = st.text_input("加水3_ノズル数量")
+    add3_freq2 = st.text_input("加水3_ほぐし機")
+    add_temp = st.number_input("加水温度 (℃)", value=0.0, format="%.1f")
+    add_flow = st.number_input("加水流量 (L/min)", value=0)
+    add_freq = st.number_input("加水P周波数 (Hz)", value=0)
+    rinse_freq = st.number_input("洗浄水P周波数（Hz）", value=0)
+    pressure = st.number_input("循環圧力（MPa）", value=0.0, format="%.3f")
+    steam_temp = st.number_input("蒸気室温度（℃）", value=0.0, format="%.1f")
+    supersteam_temp = st.number_input("過熱蒸気温度（℃）", value=0.0, format="%.1f")
+    degate = st.text_input("出口ほぐし機")
+    rotation = st.number_input("ほぐし機回転（Hz）", value=0)
+
+with col3:
+    st.markdown("### 調味コンベア")
+    addseasoning1 = st.text_input("ほぐし機1")
+    addseasoning2 = st.text_input("ほぐし機2")
+    addseasoning_rotation = st.number_input("ほぐし機（Hz）", value=0)
+    seasoning_freq = st.text_input("周波数", value="50→65→70")
+    seasoning_stroke = st.number_input("ストローク", value=0)
+    seasoning_spraying = st.text_input("想定噴霧量", value="100→130→150")
+    seasoning_temp = st.text_input("ノズル番手")
+    seasoning_number = st.text_input("ノズル数量")
+
+with col4:
+    st.markdown("### 米関係")
+    rice_type = st.text_input("こめ品種")
+    raw_weight = st.number_input("生米処理量", value=0)
+    mixed_weight = st.number_input("酢合わせ後重量", value=0.0, format="%.2f")
+    if raw_weight > 0:
+        yield_rate = round((mixed_weight / raw_weight) * 100, 2)
+    else:
+        yield_rate = 0.0
+    st.number_input("歩留まり（%）", value=yield_rate, format="%.1f", disabled=True)
+    raw_moisture = st.number_input("生米水分率", value=0.0, format="%.1f")
+    prewash_moisture = st.number_input("事前洗米後水分率", value=0.0, format="%.2f")
+    cooked_moisture = st.number_input("炊きあがり水分率", value=0.0, format="%.2f")
+    burner_state = st.text_input("蒸し機バーナー状態")
+
+# 🔻 備考欄（調味コンベアと米関係の下）
+with st.container():
+    st.markdown("### 備考")
+    remarks = st.text_area("", height=200)
+
+# 保存ボタンを押したときだけ保存処理
+if st.button("💾 データ保存"):
+    required_fields = [test_no, rice_type, burner_state]
+    if any(field.strip() == "" for field in required_fields):
+        st.warning("テキスト入力項目がすべて入力されていません。")
+    else:
+        new_data = [[
+            datetime.now().strftime("%Y-%m-%d %H:%M:%S"), test_no,
+            shutter_duration, shutter_height, shutter_power,
+            convey_speed, add0_temp, add0_flow, add0_freq1, add0_freq2, add0_waterpressure, add0_waterflow,
+            add1_temp, add1_flow, add1_freq1, add1_freq2,
+            add2_temp, add2_flow, add2_freq1, add2_freq2,
+            add3_temp, add3_flow, add3_freq1, add3_freq2,
+            add_temp, add_flow, add_freq,
+            rinse_freq, pressure, steam_temp, supersteam_temp,
+            degate, rotation, 
+            addseasoning1, addseasoning2, addseasoning_rotation,
+            seasoning_freq, seasoning_stroke, seasoning_spraying, seasoning_temp, seasoning_number,
+            rice_type, raw_weight, mixed_weight,
+            yield_rate, raw_moisture, prewash_moisture, cooked_moisture,
+            burner_state, remarks
+        ]]
+
+        new_df = pd.DataFrame(new_data, columns=COLUMNS)
+
+        if os.path.exists(DATA_PATH):
+            existing = pd.read_csv(DATA_PATH, encoding="utf-8-sig")
+            combined = pd.concat([existing, new_df], ignore_index=True)
+        else:
+            combined = new_df
+
+        combined.to_csv(DATA_PATH, index=False, encoding="utf-8-sig")
+        st.success("データを保存しました！")
+
+# 保存済みデータの表示
+if os.path.exists(DATA_PATH):
+    st.subheader("📋 保存済みデータ一覧（最新10件）")
+    df = pd.read_csv(DATA_PATH, encoding="utf-8-sig")
+    st.dataframe(df.tail(10), use_container_width=True)
